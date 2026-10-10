@@ -1,0 +1,36 @@
+{
+  "name": "goto",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --mode",
+    "build": "tsc --noEmit && vite build --mode",
+    "typecheck": "tsc --noEmit",
+    "db:push": "tsx scripts/db-push.ts",
+    "teardown": "tsx scripts/teardown.ts",
+    "test:target": "NODE_USE_ENV_PROXY=1 tsx tests/run.ts",
+    "test:compare": "NODE_USE_ENV_PROXY=1 tsx tests/run.ts multigres normal"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "dotenv": "^18.0.7",
+    "drizzle-orm": "^0.45.4",
+    "postgres": "^3.4.9",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "https-proxy-agent": "^9.1.0",
+    "jose": "^6.2.12",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "ws": "^8.22.0"
+  }
+}

@@ -1,0 +1,1 @@
+-- Local/branch seed data. GoTo creates its data through the app and tests, so this is empty.
