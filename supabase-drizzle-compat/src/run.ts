@@ -44,18 +44,38 @@ class ProxiedWebSocket extends WebSocket {
   }
 }
 
+const ALL_TARGETS = ['MULTIGRES', 'NORMAL'];
+
 function loadTargets(): Target[] {
-  const only = process.env.TARGETS?.split(',').map((s) => s.trim().toUpperCase());
-  return ['MULTIGRES', 'NORMAL']
-    .filter((n) => !only || only.includes(n))
-    .map((n) => ({
-      name: n.toLowerCase(),
-      url: process.env[`${n}_URL`] ?? '',
-      publishableKey: process.env[`${n}_PUBLISHABLE_KEY`] ?? '',
-      secretKey: process.env[`${n}_SECRET_KEY`] ?? '',
-      databaseUrl: process.env[`${n}_DATABASE_URL`] ?? '',
-    }))
-    .filter((t) => t.url);
+  const only = process.env.TARGETS?.split(',')
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean);
+  const unknown = only?.filter((n) => !ALL_TARGETS.includes(n)) ?? [];
+  if (unknown.length) throw new Error(`Unknown TARGETS: ${unknown.join(', ')} (expected ${ALL_TARGETS.join(', ')})`);
+
+  const targets = ALL_TARGETS.filter((n) => !only || only.includes(n)).map((n) => ({
+    name: n.toLowerCase(),
+    url: process.env[`${n}_URL`] ?? '',
+    publishableKey: process.env[`${n}_PUBLISHABLE_KEY`] ?? '',
+    secretKey: process.env[`${n}_SECRET_KEY`] ?? '',
+    databaseUrl: process.env[`${n}_DATABASE_URL`] ?? '',
+  }));
+
+  // Fail loudly rather than silently dropping a project with incomplete config.
+  const missing = targets.flatMap((t) => {
+    const n = t.name.toUpperCase();
+    return [
+      !t.url && `${n}_URL`,
+      !t.publishableKey && `${n}_PUBLISHABLE_KEY`,
+      !t.secretKey && `${n}_SECRET_KEY`,
+    ].filter(Boolean) as string[];
+  });
+  if (missing.length) throw new Error(`Missing env vars (check .env in ${process.cwd()}): ${missing.join(', ')}`);
+
+  if (only) console.log(`TARGETS=${process.env.TARGETS} → running: ${targets.map((t) => t.name).join(', ')}`);
+  for (const t of targets)
+    if (!t.databaseUrl) console.log(`warning: ${t.name.toUpperCase()}_DATABASE_URL not set, DB checks will be skipped`);
+  return targets;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -650,7 +670,9 @@ function report(all: Record<string, CheckResult[]>) {
 
 async function main() {
   const all: Record<string, CheckResult[]> = {};
-  for (const t of loadTargets()) all[t.name] = await runTarget(t);
+  const targets = loadTargets();
+  console.log(`Targets: ${targets.map((t) => `${t.name} (${t.url})`).join(', ')}`);
+  for (const t of targets) all[t.name] = await runTarget(t);
   report(all);
   process.exit(0);
 }
